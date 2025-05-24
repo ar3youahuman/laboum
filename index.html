@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>SpiderDoll - Web Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Embedded OK.ru Video</title>
   <style>
-    html, body {
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
       margin: 0;
-      padding: 0;
-      height: 100%;
-      background-color: #000;
-      overflow: hidden;
+    }
+    .video-wrapper {
+      width: 853px;
+      height: 480px;
+      max-width: 100%;
     }
     iframe {
       width: 100%;
@@ -20,9 +28,12 @@
   </style>
 </head>
 <body>
-  <iframe 
-    src="https://www.crazygames.com/embed/spiderdoll" 
-    allow="gamepad *;">
-  </iframe>
+  <div class="video-wrapper">
+    <iframe 
+      src="//ok.ru/videoembed/7241510750968?nochat=1" 
+      allow="autoplay" 
+      allowfullscreen>
+    </iframe>
+  </div>
 </body>
 </html>
