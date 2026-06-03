@@ -3,43 +3,102 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>laboum player</title>
+<title>laboum</title>
 <style>
-  :root { --bg:#0b0b0f; --panel:#16161d; --line:#2a2a36; --fg:#f2f2f5; --mut:#8a8a99; --acc:#6c5ce7; }
+  :root {
+    --bg:#0a0a0f; --panel:#13131b; --panel2:#1b1b25; --line:#272733;
+    --fg:#f3f3f7; --mut:#8b8b9c; --acc:#7c6cff; --acc2:#ff5fa2;
+  }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body {
-    margin: 0; background: var(--bg); color: var(--fg);
+    margin: 0; background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(124,108,255,.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 0%, rgba(255,95,162,.10), transparent 55%),
+      var(--bg);
+    color: var(--fg);
     font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     display: flex; flex-direction: column;
   }
-  /* control bar */
-  #bar {
-    display: flex; gap: 8px; padding: 8px; background: var(--panel);
-    border-bottom: 1px solid var(--line); align-items: center; flex-wrap: wrap;
+
+  /* ---- top bar ---- */
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), transparent);
+    backdrop-filter: blur(6px);
   }
-  #bar.hidden { display: none; }
-  select, input, button {
-    font: inherit; color: var(--fg); background: #0f0f15;
-    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  .brand { display:flex; align-items:center; gap:9px; font-weight:800; letter-spacing:.3px; }
+  .brand .dot {
+    width:11px; height:11px; border-radius:50%;
+    background: linear-gradient(135deg, var(--acc), var(--acc2));
+    box-shadow: 0 0 14px rgba(124,108,255,.8);
   }
-  input { flex: 1 1 220px; min-width: 0; }
-  button { background: var(--acc); border-color: var(--acc); cursor: pointer; font-weight: 600; }
-  button:hover { filter: brightness(1.08); }
-  button.ghost { background: transparent; border-color: var(--line); color: var(--mut); font-weight: 500; }
-  .stage { flex: 1; position: relative; min-height: 0; background:#000; }
+  .brand small { color: var(--mut); font-weight:500; letter-spacing:0; }
+
+  /* site chips */
+  .sites { display:flex; gap:8px; flex:1; flex-wrap:wrap; }
+  .chip {
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+    padding:7px 12px 7px 8px; border-radius:11px;
+    background: var(--panel); border:1px solid var(--line);
+    color: var(--fg); font-size:13.5px; font-weight:600;
+    transition: transform .12s ease, border-color .12s ease, background .12s ease;
+  }
+  .chip:hover { transform: translateY(-1px); background: var(--panel2); }
+  .chip.active { border-color: transparent; background: linear-gradient(135deg, rgba(124,108,255,.22), rgba(255,95,162,.18)); }
+  .chip .ico {
+    width:22px; height:22px; border-radius:6px; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    font-size:12px; font-weight:800; color:#fff;
+  }
+  .chip .ico img { width:100%; height:100%; object-fit:cover; }
+
+  .tools { display:flex; gap:8px; align-items:center; }
+  .iconbtn {
+    width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+    border-radius:10px; border:1px solid var(--line); background:var(--panel);
+    color:var(--fg); cursor:pointer; font-size:16px;
+  }
+  .iconbtn:hover { background:var(--panel2); }
+
+  /* ---- advanced bar ---- */
+  #adv {
+    display:none; gap:8px; padding:10px 14px; align-items:center; flex-wrap:wrap;
+    border-bottom:1px solid var(--line); background: var(--panel);
+  }
+  #adv.show { display:flex; }
+  select, input { font:inherit; color:var(--fg); background:#0e0e16; border:1px solid var(--line); border-radius:9px; padding:8px 10px; }
+  #id { flex:1 1 240px; min-width:0; }
+  #season, #episode { width:64px; flex:0 0 auto; }
+  .se { display:none; gap:8px; } .se.show { display:flex; }
+  .play { background: linear-gradient(135deg, var(--acc), var(--acc2)); border:none; color:#fff; font-weight:700; padding:9px 16px; border-radius:9px; cursor:pointer; }
+
+  /* ---- stage ---- */
+  .stage { flex:1; position:relative; min-height:0; background:#000; }
   .stage iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
   #hint {
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    color: var(--mut); font-size: 14px; text-align:center; padding:24px; pointer-events:none;
+    position:absolute; inset:0; display:flex; flex-direction:column; gap:6px;
+    align-items:center; justify-content:center; color:var(--mut);
+    font-size:15px; text-align:center; padding:24px; pointer-events:none;
   }
-  #season, #episode { width: 70px; flex: 0 0 auto; }
-  .se { display:none; gap:8px; }
-  .se.show { display:flex; }
+  #hint b { color: var(--fg); font-size:18px; }
+
+  header.hidden, #adv.hidden { display:none !important; }
 </style>
 </head>
 <body>
-  <div id="bar">
+  <header id="bar">
+    <div class="brand"><span class="dot"></span>laboum <small>player</small></div>
+    <nav class="sites" id="sites"></nav>
+    <div class="tools">
+      <button class="iconbtn" id="advBtn" title="Advanced sources">⋯</button>
+      <button class="iconbtn" id="openBtn" title="Open current in new tab">↗</button>
+      <button class="iconbtn" id="fs" title="Fullscreen">⛶</button>
+    </div>
+  </header>
+
+  <div id="adv">
     <select id="provider" title="Source">
       <option value="ok">OK.ru</option>
       <option value="youtube">YouTube</option>
@@ -52,26 +111,61 @@
       <input id="season" type="number" min="1" placeholder="S" title="Season" />
       <input id="episode" type="number" min="1" placeholder="E" title="Episode" />
     </span>
-    <button id="play">Play</button>
-    <button id="fs" class="ghost" title="Fullscreen">⛶</button>
+    <button class="play" id="play">Play</button>
   </div>
 
   <div class="stage" id="stage">
-    <div id="hint">Pick a source, paste an id, and hit Play.<br>Or drive it from the parent via URL params / postMessage.</div>
+    <div id="hint"><b>Pick a site above</b><span>or open the ⋯ menu for direct embeds.</span></div>
   </div>
 
 <script>
 (function () {
   "use strict";
+
+  // ---- streaming sites ----
+  var SITES = [
+    { key:"1shows",   name:"1Shows",   url:"https://www.1shows.org/",    c:"#3aa0ff" },
+    { key:"flicky",   name:"Flicky",   url:"https://flickystream.ru/",   c:"#ff7a59" },
+    { key:"456movie", name:"456Movie", url:"https://456movie.nl/",       c:"#19c37d" },
+    { key:"cineby",   name:"Cineby",   url:"https://www.cineby.sc/",     c:"#a06bff" },
+    { key:"hydrahd",  name:"HydraHD",  url:"https://hydrahd.ru/",        c:"#ff5fa2" }
+  ];
+
   var stage = document.getElementById("stage");
   var hint = document.getElementById("hint");
   var bar = document.getElementById("bar");
+  var adv = document.getElementById("adv");
+  var sitesNav = document.getElementById("sites");
   var providerEl = document.getElementById("provider");
   var idEl = document.getElementById("id");
   var seasonEl = document.getElementById("season");
   var episodeEl = document.getElementById("episode");
   var seWrap = document.getElementById("seWrap");
-  var current = null;
+  var current = null, currentSrc = null;
+
+  // ---- render site chips ----
+  SITES.forEach(function (s) {
+    var host = s.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    var chip = document.createElement("button");
+    chip.className = "chip";
+    chip.dataset.key = s.key;
+    chip.innerHTML =
+      '<span class="ico" style="background:' + s.c + '">' +
+        '<img alt="" src="https://www.google.com/s2/favicons?sz=64&domain=' + host + '" ' +
+        'onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + s.name[0] + '\'">' +
+      '</span>' + s.name;
+    chip.addEventListener("click", function () { loadSite(s.key); });
+    sitesNav.appendChild(chip);
+  });
+
+  function loadSite(key) {
+    var s = SITES.filter(function (x) { return x.key === key; })[0];
+    if (!s) return;
+    [].forEach.call(sitesNav.children, function (c) {
+      c.classList.toggle("active", c.dataset.key === key);
+    });
+    load(s.url);
+  }
 
   // ---- build an embed URL from a provider + id ----
   function buildSrc(p, id, season, episode) {
@@ -79,7 +173,6 @@
     if (!id) return null;
     switch (p) {
       case "ok":
-        // accept full ok.ru links or bare ids
         var m = id.match(/(\d{6,})/);
         return "https://ok.ru/videoembed/" + (m ? m[1] : id) + "?nochat=1";
       case "youtube":
@@ -88,12 +181,10 @@
       case "vidsrc-movie":
         return "https://vidsrc.to/embed/movie/" + encodeURIComponent(id);
       case "vidsrc-tv":
-        var s = season || 1, e = episode || 1;
-        return "https://vidsrc.to/embed/tv/" + encodeURIComponent(id) + "/" + s + "/" + e;
+        return "https://vidsrc.to/embed/tv/" + encodeURIComponent(id) + "/" + (season || 1) + "/" + (episode || 1);
       case "url":
         return /^https?:\/\//.test(id) ? id : "https://" + id;
-      default:
-        return null;
+      default: return null;
     }
   }
 
@@ -107,30 +198,27 @@
     f.setAttribute("allowfullscreen", "");
     f.setAttribute("referrerpolicy", "origin");
     stage.appendChild(f);
-    current = f;
+    current = f; currentSrc = src;
     hint.style.display = "none";
     post({ event: "loaded", src: src });
   }
-
   function loadFrom(p, id, season, episode) {
+    [].forEach.call(sitesNav.children, function (c) { c.classList.remove("active"); });
     var src = buildSrc(p, id, season, episode);
     load(src);
     return src;
   }
 
-  // ---- toggle season/episode fields for TV ----
-  function syncSE() {
-    seWrap.classList.toggle("show", providerEl.value === "vidsrc-tv");
-  }
+  function syncSE() { seWrap.classList.toggle("show", providerEl.value === "vidsrc-tv"); }
   providerEl.addEventListener("change", syncSE);
 
-  // ---- UI play button ----
   document.getElementById("play").addEventListener("click", function () {
     loadFrom(providerEl.value, idEl.value, seasonEl.value, episodeEl.value);
   });
-  idEl.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") document.getElementById("play").click();
-  });
+  idEl.addEventListener("keydown", function (e) { if (e.key === "Enter") document.getElementById("play").click(); });
+
+  document.getElementById("advBtn").addEventListener("click", function () { adv.classList.toggle("show"); });
+  document.getElementById("openBtn").addEventListener("click", function () { if (currentSrc) window.open(currentSrc, "_blank"); });
   document.getElementById("fs").addEventListener("click", goFullscreen);
 
   function goFullscreen() {
@@ -139,44 +227,42 @@
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   }
 
-  // ---- postMessage: let the parent sandbox drive the player ----
-  function post(payload) {
-    try {
-      payload.type = "laboum";
-      parent.postMessage(payload, "*");
-    } catch (e) {}
-  }
+  // ---- postMessage: let the parent sandbox drive it ----
+  function post(payload) { try { payload.type = "laboum"; parent.postMessage(payload, "*"); } catch (e) {} }
   window.addEventListener("message", function (ev) {
     var d = ev.data;
     if (!d || d.type !== "laboum") return;
     switch (d.cmd) {
+      case "site": loadSite(d.site); break;
       case "load":
         if (d.url) load(d.url);
         else loadFrom(d.provider || providerEl.value, d.id, d.season, d.episode);
         break;
-      case "fullscreen":
-        goFullscreen();
-        break;
+      case "fullscreen": goFullscreen(); break;
       case "ui":
         bar.classList.toggle("hidden", d.show === false);
+        adv.classList.toggle("hidden", d.show === false);
         break;
     }
   });
 
-  // ---- URL params: index.html?p=ok&v=ID&s=1&e=2&ui=0 ----
+  // ---- URL params ----
   function fromQuery() {
     var q = new URLSearchParams(location.search);
+    if (q.get("ui") === "0") { bar.classList.add("hidden"); adv.classList.add("hidden"); }
+
+    var site = q.get("site");
     var p = q.get("p") || q.get("provider");
     var v = q.get("v") || q.get("id");
     var url = q.get("url") || q.get("src");
-    if (q.get("ui") === "0") bar.classList.add("hidden");
 
     if (p) { providerEl.value = p; syncSE(); }
     if (v) idEl.value = v;
     if (q.get("s")) seasonEl.value = q.get("s");
     if (q.get("e")) episodeEl.value = q.get("e");
 
-    if (url) { idEl.value = url; load(/^https?:\/\//.test(url) ? url : "https://" + url); }
+    if (site) loadSite(site);
+    else if (url) { idEl.value = url; load(/^https?:\/\//.test(url) ? url : "https://" + url); }
     else if (p && v) loadFrom(p, v, q.get("s"), q.get("e"));
   }
 

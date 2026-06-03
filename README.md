@@ -9,6 +9,22 @@ movie — and you can still drive it from the sandbox.
 
 Live: https://ar3youahuman.github.io/laboum/
 
+## Streaming sites (one-click)
+
+The top bar has chips for: **1Shows, Flicky, 456Movie, Cineby, HydraHD**.
+Click one to load its full site into the stage. Deep-link a site directly:
+
+```
+https://ar3youahuman.github.io/laboum/?site=cineby
+```
+Keys: `1shows`, `flicky`, `456movie`, `cineby`, `hydrahd`.
+From a parent: `postMessage({type:"laboum", cmd:"site", site:"cineby"}, "*")`.
+
+> Some sites set `X-Frame-Options`/CSP that block being iframed at all — that's
+> the site's choice and no shim can override it. The ⋯ menu's direct embed
+> providers (OK.ru/YouTube/VidSrc) are designed to be embedded and are the
+> most reliable.
+
 ## Three ways to control it
 
 ### 1. URL query params (simplest — works under the tightest sandbox)
