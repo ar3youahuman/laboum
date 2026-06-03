@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>laboum · sandbox diagnostic</title>
+<style>
+  html,body{height:100%}
+  body{margin:0;background:#0a0a0f;color:#f3f3f7;font-family:system-ui,Segoe UI,Roboto,sans-serif;
+       display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{width:100%;max-width:560px;background:#13131b;border:1px solid #272733;border-radius:16px;padding:22px 24px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:#8b8b9c;font-size:13px;margin:0 0 16px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td{padding:8px 6px;border-bottom:1px solid #1f1f29}
+  td.k{color:#b9b9c8}
+  .v{font-weight:700}
+  .ok{color:#19c37d}.no{color:#ff5f6d}.q{color:#ffb454}
+  .verdict{margin-top:16px;padding:12px 14px;border-radius:10px;font-size:13.5px;line-height:1.5}
+  .verdict.good{background:rgba(25,195,125,.12);border:1px solid rgba(25,195,125,.4)}
+  .verdict.bad{background:rgba(255,95,109,.12);border:1px solid rgba(255,95,109,.4)}
+  code{background:#0e0e16;padding:1px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>laboum · sandbox diagnostic</h1>
+    <p class="sub">What this embedding context actually allows.</p>
+
+    <!-- No-JS fallback: visible only if scripts are blocked -->
+    <div id="noscript">
+      <table>
+        <tr><td class="k">JavaScript</td><td class="v no">BLOCKED</td></tr>
+      </table>
+      <div class="verdict bad">
+        Scripts are disabled in this sandbox. No video player can run here —
+        the restriction is set by the host (Notion) and can't be loosened from inside.
+        Use a direct link instead.
+      </div>
+    </div>
+
+    <div id="report" style="display:none"></div>
+  </div>
+
+<script>
+(function(){
+  var R = document.getElementById("report");
+  document.getElementById("noscript").style.display = "none"; // scripts run -> hide fallback
+  R.style.display = "block";
+
+  function row(k, ok, txt){
+    var cls = ok === true ? "ok" : ok === false ? "no" : "q";
+    var val = txt || (ok === true ? "YES" : ok === false ? "NO" : "?");
+    return '<tr><td class="k">'+k+'</td><td class="v '+cls+'">'+val+'</td></tr>';
+  }
+
+  // same-origin: opaque origin shows as "null"
+  var sameOrigin = (window.origin && window.origin !== "null");
+  // storage access (also gated by same-origin)
+  var storage=false; try{ localStorage.setItem("_t","1"); localStorage.removeItem("_t"); storage=true; }catch(e){}
+  // popups
+  var popups=false; try{ var w=window.open("about:blank","_blank"); if(w){popups=true; w.close();} }catch(e){}
+  // framed?
+  var framed = (window.top !== window.self);
+
+  var html = '<table>'
+    + row("JavaScript", true, "ALLOWED")
+    + row("Same-origin (allow-same-origin)", sameOrigin)
+    + row("Storage / cookies", storage)
+    + row("Popups (allow-popups)", popups)
+    + row("Inside an iframe", framed, framed ? "yes" : "no (top-level)")
+    + '<tr><td class="k">Effective origin</td><td class="v q">'+(window.origin||"?")+'</td></tr>'
+    + '<tr><td class="k">Referrer (host)</td><td class="v q">'+(document.referrer||"—")+'</td></tr>'
+    + '</table>';
+
+  // Verdict
+  var good = '<div class="verdict good">Scripts run here. A JS video player <b>can</b> execute. '
+    + 'If a site still shows blank, it\'s that site\'s <code>X-Frame-Options</code>/CSP blocking framing, '
+    + 'not the sandbox.</div>';
+  var meh = '<div class="verdict bad">Scripts run, but <b>same-origin is disabled</b> (origin = '
+    + '<code>null</code>). Players that rely on storage/cookies may still fail, and '
+    + '<code>postMessage</code> control from the parent is limited.</div>';
+
+  R.innerHTML = html + (sameOrigin ? good : meh);
+})();
+</script>
+</body>
+</html>
