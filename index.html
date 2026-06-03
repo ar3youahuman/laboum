@@ -1,39 +1,189 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Embedded OK.ru Video</title>
-  <style>
-    body {
-      background-color: #111;
-      color: #fff;
-      font-family: sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .video-wrapper {
-      width: 853px;
-      height: 480px;
-      max-width: 100%;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>laboum player</title>
+<style>
+  :root { --bg:#0b0b0f; --panel:#16161d; --line:#2a2a36; --fg:#f2f2f5; --mut:#8a8a99; --acc:#6c5ce7; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  /* control bar */
+  #bar {
+    display: flex; gap: 8px; padding: 8px; background: var(--panel);
+    border-bottom: 1px solid var(--line); align-items: center; flex-wrap: wrap;
+  }
+  #bar.hidden { display: none; }
+  select, input, button {
+    font: inherit; color: var(--fg); background: #0f0f15;
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  }
+  input { flex: 1 1 220px; min-width: 0; }
+  button { background: var(--acc); border-color: var(--acc); cursor: pointer; font-weight: 600; }
+  button:hover { filter: brightness(1.08); }
+  button.ghost { background: transparent; border-color: var(--line); color: var(--mut); font-weight: 500; }
+  .stage { flex: 1; position: relative; min-height: 0; background:#000; }
+  .stage iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  #hint {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color: var(--mut); font-size: 14px; text-align:center; padding:24px; pointer-events:none;
+  }
+  #season, #episode { width: 70px; flex: 0 0 auto; }
+  .se { display:none; gap:8px; }
+  .se.show { display:flex; }
+</style>
 </head>
 <body>
-  <div class="video-wrapper">
-    <iframe 
-      src="//ok.ru/videoembed/7241510750968?nochat=1" 
-      allow="autoplay" 
-      allowfullscreen>
-    </iframe>
+  <div id="bar">
+    <select id="provider" title="Source">
+      <option value="ok">OK.ru</option>
+      <option value="youtube">YouTube</option>
+      <option value="vidsrc-movie">VidSrc · Movie</option>
+      <option value="vidsrc-tv">VidSrc · TV</option>
+      <option value="url">Raw URL</option>
+    </select>
+    <input id="id" placeholder="video id / TMDB id / IMDB id / full embed URL" />
+    <span class="se" id="seWrap">
+      <input id="season" type="number" min="1" placeholder="S" title="Season" />
+      <input id="episode" type="number" min="1" placeholder="E" title="Episode" />
+    </span>
+    <button id="play">Play</button>
+    <button id="fs" class="ghost" title="Fullscreen">⛶</button>
   </div>
+
+  <div class="stage" id="stage">
+    <div id="hint">Pick a source, paste an id, and hit Play.<br>Or drive it from the parent via URL params / postMessage.</div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+  var stage = document.getElementById("stage");
+  var hint = document.getElementById("hint");
+  var bar = document.getElementById("bar");
+  var providerEl = document.getElementById("provider");
+  var idEl = document.getElementById("id");
+  var seasonEl = document.getElementById("season");
+  var episodeEl = document.getElementById("episode");
+  var seWrap = document.getElementById("seWrap");
+  var current = null;
+
+  // ---- build an embed URL from a provider + id ----
+  function buildSrc(p, id, season, episode) {
+    id = (id || "").trim();
+    if (!id) return null;
+    switch (p) {
+      case "ok":
+        // accept full ok.ru links or bare ids
+        var m = id.match(/(\d{6,})/);
+        return "https://ok.ru/videoembed/" + (m ? m[1] : id) + "?nochat=1";
+      case "youtube":
+        var y = id.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
+        return "https://www.youtube.com/embed/" + (y ? y[1] : id);
+      case "vidsrc-movie":
+        return "https://vidsrc.to/embed/movie/" + encodeURIComponent(id);
+      case "vidsrc-tv":
+        var s = season || 1, e = episode || 1;
+        return "https://vidsrc.to/embed/tv/" + encodeURIComponent(id) + "/" + s + "/" + e;
+      case "url":
+        return /^https?:\/\//.test(id) ? id : "https://" + id;
+      default:
+        return null;
+    }
+  }
+
+  // ---- swap the inner iframe ----
+  function load(src) {
+    if (!src) return;
+    if (current) current.remove();
+    var f = document.createElement("iframe");
+    f.src = src;
+    f.setAttribute("allow", "autoplay; fullscreen; encrypted-media; picture-in-picture");
+    f.setAttribute("allowfullscreen", "");
+    f.setAttribute("referrerpolicy", "origin");
+    stage.appendChild(f);
+    current = f;
+    hint.style.display = "none";
+    post({ event: "loaded", src: src });
+  }
+
+  function loadFrom(p, id, season, episode) {
+    var src = buildSrc(p, id, season, episode);
+    load(src);
+    return src;
+  }
+
+  // ---- toggle season/episode fields for TV ----
+  function syncSE() {
+    seWrap.classList.toggle("show", providerEl.value === "vidsrc-tv");
+  }
+  providerEl.addEventListener("change", syncSE);
+
+  // ---- UI play button ----
+  document.getElementById("play").addEventListener("click", function () {
+    loadFrom(providerEl.value, idEl.value, seasonEl.value, episodeEl.value);
+  });
+  idEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("play").click();
+  });
+  document.getElementById("fs").addEventListener("click", goFullscreen);
+
+  function goFullscreen() {
+    var el = current || stage;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  }
+
+  // ---- postMessage: let the parent sandbox drive the player ----
+  function post(payload) {
+    try {
+      payload.type = "laboum";
+      parent.postMessage(payload, "*");
+    } catch (e) {}
+  }
+  window.addEventListener("message", function (ev) {
+    var d = ev.data;
+    if (!d || d.type !== "laboum") return;
+    switch (d.cmd) {
+      case "load":
+        if (d.url) load(d.url);
+        else loadFrom(d.provider || providerEl.value, d.id, d.season, d.episode);
+        break;
+      case "fullscreen":
+        goFullscreen();
+        break;
+      case "ui":
+        bar.classList.toggle("hidden", d.show === false);
+        break;
+    }
+  });
+
+  // ---- URL params: index.html?p=ok&v=ID&s=1&e=2&ui=0 ----
+  function fromQuery() {
+    var q = new URLSearchParams(location.search);
+    var p = q.get("p") || q.get("provider");
+    var v = q.get("v") || q.get("id");
+    var url = q.get("url") || q.get("src");
+    if (q.get("ui") === "0") bar.classList.add("hidden");
+
+    if (p) { providerEl.value = p; syncSE(); }
+    if (v) idEl.value = v;
+    if (q.get("s")) seasonEl.value = q.get("s");
+    if (q.get("e")) episodeEl.value = q.get("e");
+
+    if (url) { idEl.value = url; load(/^https?:\/\//.test(url) ? url : "https://" + url); }
+    else if (p && v) loadFrom(p, v, q.get("s"), q.get("e"));
+  }
+
+  syncSE();
+  fromQuery();
+  post({ event: "ready" });
+})();
+</script>
 </body>
 </html>
